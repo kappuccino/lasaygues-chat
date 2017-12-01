@@ -5,6 +5,7 @@
   "main": "app.js",
   "scripts": {
     "test": "jest",
+    "test-ci": "jest --ci",
     "test-watch": "jest -e --watch *.js"
   },
   "engines": {
