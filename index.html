@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+</head>
+<body>
+
+<a href="">Reloader la page</a>
+
+<pre id="users"></pre>
+
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    const users = document.getElementById('users')
+
+    const user = {
+	    name: getParameterByName('user'),
+	    room: getParameterByName('room'),
+	    id: getParameterByName('id')
+    }
+
+    document.querySelector('a').href = `/?user=${user.name}&room=${user.room}&id=${user.id}&r=${ (new Date()).getTime() }`
+
+    console.log('je suis', JSON.stringify(user))
+
+	var socket = io.connect('http://localhost:8080')
+
+    socket.on('connect', function(){
+        socket.emit('selfRegister', user)
+    })
+
+	socket.on('msg', function (data) {
+		console.log('msg', data)
+    })
+
+    socket.on('userList', function (data) {
+		console.log(data)
+        users.innerHTML = JSON.stringify(data, null, 2)
+    })
+
+    function getParameterByName(name, url) {
+			if (!url) url = window.location.href;
+			name = name.replace(/[\[\]]/g, "\\$&");
+			var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
+				results = regex.exec(url);
+			if (!results) return null;
+			if (!results[2]) return '';
+			return decodeURIComponent(results[2].replace(/\+/g, " "));
+		}
+</script>
+
+</body>
+</html>
