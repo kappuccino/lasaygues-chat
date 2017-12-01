@@ -7,6 +7,10 @@
     "test": "jest",
     "test-watch": "jest -e --watch *.js"
   },
+  "engines": {
+    "node": "8.7.10",
+    "npm": "5.5.1"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",
