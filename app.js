@@ -31,8 +31,23 @@ io.on('connection', function (socket){
 		user.setStatus('online')
 		user.attachSocket(socket.id)
 
+		// Est-ce que cet utilisateur fati déjà partie de ROOM
+		rooms.getRooms()
+			.map(r => r.get())
+			.filter(r => r.users.indexOf(userData.id) > -1)
+			.forEach(r => {
+				socket.join(r.id)
+				console.log(`Je fait partire de la room ${r.id}`, r)
+
+			})
+
+
+		// Broadcast
 		usersStatus()
 		roomsStatus()
+
+		// Rehydrate UI
+		rehydrate(socket)
 	})
 
 	socket.on('exitRoom', function(id){
@@ -111,7 +126,7 @@ io.on('connection', function (socket){
 		//console.log(JSON.stringify(rooms.getRooms(), null, 2))
 	})
 
-	socket.on('disconnect', function() {
+	socket.on('disconnect', function(){
 		const user = users.getUserBySocket(socket.id)
 		if(!user) return
 		console.log(`${user.get('name')} is disconnected (previous socket ${socket.id})`)
@@ -136,10 +151,36 @@ io.on('connection', function (socket){
 		io.in(data.room).emit('newMessage', newMessage)
 
 		console.log('💬 [New message]', newMessage)
+		console.log('Send message to room', data.room)
+		console.log(rooms.getRoom(data.room))
+	})
 
+	socket.on('rehydrate', function(){
+		console.log(`socket.on('rehydrate')...`)
+		rehydrate(socket)
 	})
 
 })
+
+function rehydrate(pipe){
+	const who = pipe ? users.getUserBySocket(pipe.id).get('name') : 'all'
+	console.log('-- rehydrating '+who+' ----------------------------------------------------')
+
+	const allUsers = users.getUserList().map(u => u.get())
+	const allRooms = rooms.getRooms().map(r => r.get())
+
+	console.log('--users')
+	console.log(allUsers.map(u => u.name))
+
+	console.log('--rooms')
+	console.log(allRooms)
+
+	// Si on a un pipe, il faut renvoyer l'infos qu'a celui-ci, si non à tous
+	;(pipe || io).emit('rehydrated', {
+		users: allUsers,
+		rooms: allRooms
+	})
+}
 
 function usersStatus(){
 	if(statusTimer) clearTimeout(statusTimer)
