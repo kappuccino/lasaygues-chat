@@ -86,7 +86,7 @@ io.on('connection', function (socket){
 			room.appendUsers(usersID)
 		}else{
 			room = already[0]
-			console.log('Recycle roomt', room.getId())
+			console.log('Recycle room', room.getId())
 		}
 
 		// Prevenir tout le monde
