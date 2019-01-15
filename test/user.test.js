@@ -1,7 +1,7 @@
-const List = require('./list')
-const User = require('./user')
-const Rooms = require('./rooms')
-const Room = require('./room')
+const List = require('../list')
+const User = require('../user')
+const Rooms = require('../rooms')
+const Room = require('../room')
 
 
 // List
