@@ -23,7 +23,10 @@ class User{
 	}
 
 	attachSocket(socketId){
-		this.data.sockets = [...this.data.sockets, socketId]
+		if(this.data.sockets.indexOf(socketId) === -1) {
+			this.data.sockets = [...this.data.sockets, socketId]
+		}
+
 		return this
 	}
 

@@ -8,6 +8,10 @@ class Rooms {
 
 	createRoom(data){
 		const room = new Room(data)
+		console.log('-- Create a new room')
+		console.log(room)
+		console.log('--------------------')
+
 		this.rooms = [...this.rooms, room]
 		return room
 	}

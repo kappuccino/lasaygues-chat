@@ -1,57 +1,48 @@
 <!doctype html>
-<html lang="en">
+<html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport"
-          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Document</title>
 </head>
 <body>
 
-<a href="">Reloader la page</a>
+<p>Users</p>
+<pre id="users">...</pre>
 
-<pre id="users"></pre>
+<p>Rooms</p>
+<pre id="rooms">...</pre>
 
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
-    const users = document.getElementById('users')
+	const users = document.querySelector('#users')
+	const rooms = document.querySelector('#rooms')
 
-    const user = {
-	    name: getParameterByName('user'),
-	    room: getParameterByName('room'),
-	    id: getParameterByName('id')
-    }
+    let socket = io.connect('http://localhost:8080')
 
-    document.querySelector('a').href = `/?user=${user.name}&room=${user.room}&id=${user.id}&r=${ (new Date()).getTime() }`
+	socket.on('connect', function () {
+		console.log('Connected')
+	})
 
-    console.log('je suis', JSON.stringify(user))
+	socket.on('userList', function (data) {
+		console.log('userList', data)
+		users.innerHTML = JSON.stringify(data, null, 2)
+	})
 
-	var socket = io.connect('http://localhost:8080')
+	socket.on('roomsList', function (data) {
+		console.log('roomsList', data)
+        rooms.innerHTML = JSON.stringify(data, null, 2)
+	})
 
-    socket.on('connect', function(){
-        socket.emit('selfRegister', user)
-    })
-
-	socket.on('msg', function (data) {
-		console.log('msg', data)
-    })
-
-    socket.on('userList', function (data) {
-		console.log(data)
-        users.innerHTML = JSON.stringify(data, null, 2)
-    })
-
-    function getParameterByName(name, url) {
-			if (!url) url = window.location.href;
-			name = name.replace(/[\[\]]/g, "\\$&");
-			var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
-				results = regex.exec(url);
-			if (!results) return null;
-			if (!results[2]) return '';
-			return decodeURIComponent(results[2].replace(/\+/g, " "));
-		}
+	function getParameterByName(name, url) {
+		if (!url) url = window.location.href;
+		name = name.replace(/[\[\]]/g, "\\$&");
+		var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
+			results = regex.exec(url);
+		if (!results) return null;
+		if (!results[2]) return '';
+		return decodeURIComponent(results[2].replace(/\+/g, " "));
+	}
 </script>
 
 </body>
