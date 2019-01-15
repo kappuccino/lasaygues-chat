@@ -1,3 +1,5 @@
+require('dotenv').config()
+
 const app = require('express')()
 const server = require('http').Server(app)
 const io = require('socket.io')(server)
@@ -12,7 +14,7 @@ const rooms = new Rooms()
 // We use this timer to delay a broadcasting of all statuses for everybody
 let statusTimer
 
-server.listen(8080);
+server.listen(process.env.port);
 
 app.get('/', function (req, res) {
 	res.sendFile(__dirname + '/index.html');
