@@ -14,7 +14,7 @@ const rooms = new Rooms()
 // We use this timer to delay a broadcasting of all statuses for everybody
 let statusTimer
 
-server.listen(process.env.port);
+server.listen(process.env.PORT)
 
 app.get('/', function (req, res) {
 	res.sendFile(__dirname + '/index.html');
