@@ -18,20 +18,21 @@ server.listen(process.env.PORT)
 
 app.get('/', function (req, res) {
 	res.sendFile(__dirname + '/index.html');
-});
+})
 
 io.on('connection', function (socket){
 
 	socket.on('selfRegister', function(userData){
 
-		// If the user already exist, we simply attach the socket to it
+		// If the user already exist (we need to get the ID from the data and not from the socket),
+		// we simply attach the socket to it
 		let user = users.getUser(userData.id)
 		if(!user) user = users.addUser(userData)
 
 		console.log(`User "${userData.name}" is connected via socket ${socket.id}`)
 
 		// Activate the user, and attache the current socket to it
-		user.setStatus('online')
+		user.setStatus(userData.status !== undefined ? userData.status : 'online')
 		user.attachSocket(socket.id)
 
 		// Est-ce que cet utilisateur fati déjà partie de ROOM
@@ -103,6 +104,7 @@ io.on('connection', function (socket){
 		usersID.forEach(userID => {
 
 			const user = users.getUser(userID)
+			if(!user) return
 			console.log(user)
 
 			console.log(`🔥 On doit prevenir user #${user.get('id')} qu'il est dans la room #${room.getId()}`)
@@ -166,14 +168,25 @@ io.on('connection', function (socket){
 	})
 
 	socket.on('updateUser', function(userData){
-		let user = users.getUser(userData.id)
+		let user = users.getUserBySocket(socket.id)
 		if(!user) return
 
 		console.log(`Mise à jour d'un user avec ces params`, userData)
 		user.set(userData)
 
 		usersStatus()
+	})
 
+	socket.on('toggleOnline', function(isOnline){
+		const user = users.getUserBySocket(socket.id)
+		if(!user) return
+
+		console.log(`Mise à jour du status "online" pour`, user.id, `${isOnline ? 'online' : 'offline'}`)
+		user.set({
+			online: isOnline
+		})
+
+		usersStatus()
 	})
 
 })
