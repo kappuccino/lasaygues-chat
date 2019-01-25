@@ -24,6 +24,11 @@ app.get('/', function (req, res) {
 
 io.on('connection', function (socket){
 
+	socket.on('refresh', function(){
+		roomsStatus()
+		usersStatus()
+	})
+
 	socket.on('selfRegister', function(userData){
 
 		// If the user already exist (we need to get the ID from the data and not from the socket),
@@ -76,7 +81,9 @@ io.on('connection', function (socket){
 
 	socket.on('createRoom', function(data){
 
-		console.log('-- createRoom event --')
+		const askerID = users.getUserBySocket(socket.id).get('id')
+
+		console.log('-- createRoom event -- from()', askerID)
 
 		let room
 
@@ -94,12 +101,6 @@ io.on('connection', function (socket){
 			room = already[0]
 			console.log('Recycle room', room.getId())
 		}
-
-		// Prevenir tout le monde
-		/*io.emit('enterRoom', {
-			users: data.users,
-			room: room.getId()
-		})*/
 
 		roomsStatus()
 
@@ -125,6 +126,12 @@ io.on('connection', function (socket){
 
 				// And make them to enter the room
 				uSocket.join(room.getId())
+
+				// Auto enter
+				if(userID === askerID){
+					console.log('------ autoEnterRoom pour ', askerID)
+					uSocket.emit('autoEnterRoom', room.getId() )
+				}
 			})
 
 		})
