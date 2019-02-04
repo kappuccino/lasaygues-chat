@@ -137,6 +137,27 @@ it('Should get the room id (from room object)', function(){
 	expect(R.getRooms()[0].getId()).toBe(id)
 })
 
+it('Should insert a user in `isWriting` list for a room', function(){
+	const R = new Rooms()
+
+	const room = R.createRoom()
+	room.isWriting(1, true)
+
+	expect(room.get('isWriting')[0]).toBe(1)
+})
+
+it('Should remove a user from `isWriting` list', function(){
+	const R = new Rooms()
+
+	const room = R.createRoom()
+
+	room.isWriting(1, true)
+	expect(room.get('isWriting')[0]).toBe(1)
+
+	room.isWriting(1, false)
+	expect(room.get('isWriting').length).toBe(0)
+})
+
 
 
 // Room

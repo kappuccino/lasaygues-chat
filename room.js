@@ -21,12 +21,12 @@ class Room {
 	}
 
 	appendUser(id){
-		this.data.users = [...this.data.users, id]
+		if(this.data.users.indexOf(id) === -1) this.data.users = [...this.data.users, id]
 		return this
 	}
 
 	appendUsers(ids){
-		this.data.users = [...this.data.users, ...ids]
+		ids.forEach(id => this.appendUser(id))
 		return this
 	}
 
@@ -40,10 +40,27 @@ class Room {
 		return this
 	}
 
-	// Dirty ?
+	onlyUser(id){
+		if(!id) return false
+		return this.data.users.length === 1 && this.data.users[0] === id
+	}
+
 	onlyUsers(users){
 		if(!Array.isArray(users)) return false
 		return [...this.data.users].sort().toString() === [...users].sort().toString()
+	}
+
+	isWriting(id, is){
+
+		if(!this.data.isWriting) this.data.isWriting = []
+
+		if(is){
+			this.data.isWriting = Array.from(new Set([...this.data.isWriting, id]))
+		}else{
+			this.data.isWriting = this.data.isWriting.filter(id => id !== id)
+		}
+
+		return this
 	}
 
 }

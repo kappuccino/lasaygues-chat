@@ -61,6 +61,14 @@ io.on('connection', function (socket){
 		rehydrate(socket)
 	})
 
+	socket.on('appendUser', function({roomId, userId}){
+		console.log('appendUser', {roomId, userId})
+
+		injectUserIntoRoom(roomId, userId)
+
+		roomsStatus()
+	})
+
 	socket.on('exitRoom', function(id){
 
 		console.log('-- exitRoom event --')
@@ -81,17 +89,25 @@ io.on('connection', function (socket){
 
 	socket.on('createRoom', function(data){
 
+		let room
 		const askerID = users.getUserBySocket(socket.id).get('id')
 
 		console.log('-- createRoom event -- from()', askerID)
 
-		let room
-
-		// Liste des ID users concerné par la room
+		// Liste des ID users concernés par la room
 		const usersID = [data.creator, data.guest]
 
-		// Est-ce qu'il existe déjà une room avec QUE ces 2 users
-		const already = rooms.getRooms().filter(room => room.onlyUsers(usersID))
+		// Est-ce qu'il existe déjà une room qui pourrait être recyclé
+		const already = rooms.getRooms().filter(room => {
+			// avec QUE le creator
+			if(room.onlyUser(data.creator)) return true
+
+			// avec QUE ces 2 users
+			if(room.onlyUsers(usersID)) return true
+
+
+			return false
+		})
 
 		if(!already.length){
 			console.log('createRoom', usersID)
@@ -100,50 +116,42 @@ io.on('connection', function (socket){
 		}else{
 			room = already[0]
 			console.log('Recycle room', room.getId())
+
+			systemRoomMessage(room.getId, `XX a rejoint la conversation`)
 		}
 
 		roomsStatus()
 
 		usersID.forEach(userID => {
-
-			const user = users.getUser(userID)
-			if(!user) return
-			console.log(user)
-
-			console.log(`🔥 On doit prevenir user #${user.get('id')} qu'il est dans la room #${room.getId()}`)
-
-			user.get('sockets').forEach(socket => {
-				const uSocket = io.sockets.connected[socket]
-				if(!uSocket) return
-
-				console.log('- Ahoy user', socket, 'please enter Room', room.getId())
-
-				// Tell thoses users, they are in the room now
-				uSocket.emit('enterRoom', {
-					users: data.users,
-					room: room.getId()
-				})
-
-				// And make them to enter the room
-				uSocket.join(room.getId())
-
-				// Auto enter
-				if(userID === askerID){
-					console.log('------ autoEnterRoom pour ', askerID)
-					uSocket.emit('autoEnterRoom', room.getId() )
-				}
-			})
-
+			const autoEnter = userID === askerID
+			injectUserIntoRoom(room.getId(), userID, autoEnter)
 		})
 
 		console.log(`-- 🦊 Rooms (${rooms.getRooms().length})`)
 		//console.log(JSON.stringify(rooms.getRooms(), null, 2))
 	})
 
+	socket.on('leaveRoom', function(roomId){
+		const userId = users.getUserBySocket(socket.id).get('id')
+		const room = rooms.getRoom(roomId)
+
+		const user = users.getUser(userId)
+		const userName = `${user.get('firstName') || ''} ${user.get('lastName') || ''} `.trim()
+
+		room.removeUser(userId)
+
+		systemRoomMessage(roomId, `${userName} a quitté la conversation`)
+
+		// No body left in the room => kill the room
+		if(room.get('users').length === 0) rooms.removeRoom(roomId)
+
+		roomsStatus()
+	})
+
 	socket.on('disconnect', function(){
 		const user = users.getUserBySocket(socket.id)
 		if(!user) return
-		console.log(`${user.get('id')} is disconnected (previous socket ${socket.id})`)
+		//console.log(`${user.get('id')} is disconnected (previous socket ${socket.id})`)
 
 		// Revoke the user, detach the socket
 		user.setStatus('offline')
@@ -165,6 +173,7 @@ io.on('connection', function (socket){
 		}
 
 		io.in(data.room).emit('newMessage', newMessage)
+		io.emit('__newMessage__', newMessage) // spy & debug
 
 		console.log('💬 [New message]', newMessage)
 		console.log('Send message to room', data.room)
@@ -198,7 +207,66 @@ io.on('connection', function (socket){
 		usersStatus()
 	})
 
+	socket.on('isWriting', function(roomId, is){
+		console.log('isWriting', roomId, is)
+
+		const room = rooms.getRoom(roomId)
+		if(!room) return
+
+		const userId = users.getUserBySocket(socket.id).get('id')
+
+		room.isWriting(userId, is)
+
+		/*const user = users.getUserBySocket(socket.id)
+		if(!user) return
+
+		console.log(`Mise à jour du status "online" pour`, user.id, `${isOnline ? 'online' : 'offline'}`)
+		user.set({
+			online: isOnline
+		})*/
+
+		roomsStatus()
+	})
+
 })
+
+function injectUserIntoRoom(roomId, userId, auto){
+
+	const room = rooms.getRoom(roomId)
+	if(!room) return
+
+	const user = users.getUser(userId)
+	if(!user) return
+
+	// On ajouter ce User à la Room
+	room.appendUser(userId)
+
+	console.log(`🔥 On doit prevenir user #${userId} qu'il est dans la room #${roomId}`)
+
+	user.get('sockets').forEach(socket => {
+		const uSocket = io.sockets.connected[socket]
+		if(!uSocket) return
+
+		console.log('- Ahoy user', socket, 'please enter Room', roomId)
+
+		// Tell thoses users, they are in the room now
+		uSocket.emit('enterRoom', {
+			users: room.getUsers(),
+			room: roomId
+		})
+
+		// And make them to enter the room
+		uSocket.join(roomId)
+
+		// Auto enter
+		if(auto){
+			console.log('------ autoEnterRoom pour ', userId)
+			uSocket.emit('autoEnterRoom', roomId)
+		}
+
+	})
+
+}
 
 function rehydrate(pipe){
 	const who = pipe ? users.getUserBySocket(pipe.id).get('id') : 'all'
@@ -252,5 +320,17 @@ function roomsStatus(){
 		})
 
 	})*/
+
+}
+
+function systemRoomMessage(roomId, message){
+
+	io.in(roomId).emit('newMessage', {
+		message,
+		room: roomId,
+		id: uuidv4(),
+		author: 'system',
+		time: new Date()
+	})
 
 }

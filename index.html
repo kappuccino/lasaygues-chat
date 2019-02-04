@@ -2,37 +2,70 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Document</title>
+    <style>
+        .split{
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-gap: 5px;
+        }
+
+        .split > div{
+            overflow: scroll;
+            padding: 5px;
+        }
+
+        h4{
+            margin: 0;
+            padding: 0;
+        }
+    </style>
 </head>
 <body>
 
-<p>Users</p>
-<pre id="users">...</pre>
 
-<p>Rooms</p>
-<pre id="rooms">...</pre>
+<div class="split">
+
+    <div style="background: antiquewhite">
+        <h4>Users</h4>
+        <pre id="users"></pre>
+    </div>
+
+    <div style="background: goldenrod">
+        <h4>Rooms</h4>
+        <pre id="rooms"></pre>
+    </div>
+
+    <div style="background: gold">
+        <h4>Messages</h4>
+        <pre id="messages"></pre>
+    </div>
+
+</div>
 
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
 	const users = document.querySelector('#users')
 	const rooms = document.querySelector('#rooms')
+	const messages = document.querySelector('#messages')
 
-    let socket = io.connect()
+	let socket = io.connect()
 
 	socket.on('connect', function () {
 		console.log('Connected')
-        socket.emit('refresh')
+		socket.emit('refresh')
 	})
 
 	socket.on('userList', function (data) {
-		console.log('userList', data)
 		users.innerHTML = JSON.stringify(data, null, 2)
 	})
 
 	socket.on('roomsList', function (data) {
-		console.log('roomsList', data)
-        rooms.innerHTML = JSON.stringify(data, null, 2)
+		rooms.innerHTML = JSON.stringify(data, null, 2)
+	})
+
+	socket.on('__newMessage__', function (data) {
+		messages.innerHTML = JSON.stringify(data, null, 2) + "\n" + messages.innerHTML
 	})
 
 </script>

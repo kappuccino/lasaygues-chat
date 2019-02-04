@@ -14,7 +14,7 @@ class User{
 	}
 
 	set(data={}){
-		this.data = Object.assign({}, this.data, data)
+		this.data = {...this.data, ...data}
 		return this
 	}
 

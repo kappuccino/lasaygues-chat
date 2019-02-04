@@ -8,21 +8,25 @@ class Rooms {
 
 	createRoom(data){
 		const room = new Room(data)
-		console.log('-- Create a new room')
+		/*console.log('-- Create a new room')
 		console.log(room)
-		console.log('--------------------')
+		console.log('--------------------')*/
 
 		this.rooms = [...this.rooms, room]
 		return room
 	}
 
 	getRoom(id){
-		const res = this.rooms.find(u => u.data.id === id)
-		return res ? res : null
+		return this.rooms.find(u => u.data.id === id)
 	}
 
 	getRooms(){
 		return this.rooms
+	}
+
+	removeRoom(id){
+		this.rooms = this.rooms.filter(r => r.get('id') !== id)
+		return this
 	}
 
 }
