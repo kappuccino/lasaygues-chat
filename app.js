@@ -34,9 +34,7 @@ io.on('connection', function (socket){
 	})
 
 	socket.on('selfRegister', function(userData){
-
-		console.log('===>', userData)
-
+		
 		// If the user already exist (we need to get the ID from the data and not from the socket),
 		// we simply attach the socket to it
 		let user = users.getUser(userData.id)
@@ -54,7 +52,7 @@ io.on('connection', function (socket){
 			.filter(r => r.users.indexOf(userData.id) > -1)
 			.forEach(r => {
 				socket.join(r.id)
-				console.log(`Je fait partire de la room ${r.id}`, r)
+				console.log(`Je fait partie de la room ${r.id}`, r)
 
 			})
 
