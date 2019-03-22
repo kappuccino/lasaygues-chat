@@ -35,7 +35,7 @@ io.on('connection', function (socket){
 
 	socket.on('selfRegister', function(userData){
 
-		console.log('===>', userdata)
+		console.log('===>', userData)
 
 		// If the user already exist (we need to get the ID from the data and not from the socket),
 		// we simply attach the socket to it
@@ -283,7 +283,7 @@ function rehydrate(pipe){
 		console.log('pipe', pipe)
 		const user = users.getUserBySocket(pipe.id)
 		console.log('user', user)
-		
+
 		if(user) who = user.getId()
 	}
 
