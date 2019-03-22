@@ -6,6 +6,10 @@ class List {
 		this.list = []
 	}
 
+	garbageCycle(){
+		this.list = this.list.filter(u => !!u.getId())
+	}
+
 	addUser(userData){
 		const user = new User(userData)
 		this.list = [...this.list, user]
@@ -31,6 +35,7 @@ class List {
 	}
 
 	getUserList(){
+		this.garbageCycle()
 		return this.list.map(u => u)
 	}
 

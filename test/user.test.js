@@ -71,6 +71,17 @@ it('Update a user should update this user in the list', function(){
 	expect(list[0].data.name).toBe('Benjamin')
 })
 
+it('User with no ID should be garbaged', function(){
+	const L = new List()
+
+	L.addUser({id: 123})
+	L.addUser({})
+
+	const list = L.getUserList()
+
+	expect(list.length).toBe(1)
+})
+
 
 
 
