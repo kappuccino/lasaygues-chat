@@ -2,6 +2,7 @@ require('dotenv').config()
 
 const app = require('express')()
 const server = require('http').Server(app)
+const cors = require('cors')
 const io = require('socket.io')(server)
 const uuidv4 = require('uuid/v4')
 
@@ -13,6 +14,9 @@ const rooms = new Rooms()
 
 // We use this timer to delay a broadcasting of all statuses for everybody
 let statusTimer
+
+app.use(cors())
+
 
 server.listen(process.env.PORT, () => {
 	console.log('Start listening on port', process.env.PORT)
