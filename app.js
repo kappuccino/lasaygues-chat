@@ -35,12 +35,14 @@ io.on('connection', function (socket){
 
 	socket.on('selfRegister', function(userData){
 
+		console.log('===>', userdata)
+
 		// If the user already exist (we need to get the ID from the data and not from the socket),
 		// we simply attach the socket to it
 		let user = users.getUser(userData.id)
 		if(!user) user = users.addUser(userData)
 
-		console.log(`User "${userData.name}" is connected via socket ${socket.id}`)
+		console.log(`User "${userData.id}" is connected via socket ${socket.id}`)
 
 		// Activate the user, and attache the current socket to it
 		user.setStatus(userData.status !== undefined ? userData.status : 'online')
@@ -94,7 +96,7 @@ io.on('connection', function (socket){
 	socket.on('createRoom', function(data){
 
 		let room
-		const askerID = users.getUserBySocket(socket.id).get('id')
+		const askerID = users.getUserBySocket(socket.id).getId()
 
 		console.log('-- createRoom event -- from()', askerID)
 
@@ -136,7 +138,7 @@ io.on('connection', function (socket){
 	})
 
 	socket.on('leaveRoom', function(roomId){
-		const userId = users.getUserBySocket(socket.id).get('id')
+		const userId = users.getUserBySocket(socket.id).getId()
 		const room = rooms.getRoom(roomId)
 
 		const user = users.getUser(userId)
@@ -155,7 +157,7 @@ io.on('connection', function (socket){
 	socket.on('disconnect', function(){
 		const user = users.getUserBySocket(socket.id)
 		if(!user) return
-		//console.log(`${user.get('id')} is disconnected (previous socket ${socket.id})`)
+		//console.log(`${user.getId())} is disconnected (previous socket ${socket.id})`)
 
 		// Revoke the user, detach the socket
 		user.setStatus('offline')
@@ -217,7 +219,7 @@ io.on('connection', function (socket){
 		const room = rooms.getRoom(roomId)
 		if(!room) return
 
-		const userId = users.getUserBySocket(socket.id).get('id')
+		const userId = users.getUserBySocket(socket.id).getId()
 
 		room.isWriting(userId, is)
 
@@ -273,14 +275,25 @@ function injectUserIntoRoom(roomId, userId, auto){
 }
 
 function rehydrate(pipe){
-	const who = pipe ? users.getUserBySocket(pipe.id).get('id') : 'all'
+	let who = 'all'
+
+	console.log('rehydrate')
+
+	if(pipe){
+		console.log('pipe', pipe)
+		const user = users.getUserBySocket(pipe.id)
+		console.log('user', user)
+		
+		if(user) who = user.getId()
+	}
+
 	console.log('-- rehydrating '+who+' ----------------------------------------------------')
 
 	const allUsers = users.getUserList().map(u => u.get())
 	const allRooms = rooms.getRooms().map(r => r.get())
 
 	console.log('--users')
-	console.log(allUsers.map(u => u.name))
+	console.log(allUsers.map(u => u.id))
 
 	console.log('--rooms')
 	console.log(allRooms)
@@ -306,7 +319,7 @@ function roomsStatus(){
 	/*users.getUserList().forEach(user => {
 		if(data.users.indexOf(user.getId()) === -1) return
 
-		//console.log(`🔥 On doit prevenir user #${user.get('id')} qu'il est dans la room #${room.getId()}`)
+		//console.log(`🔥 On doit prevenir user #${user.getId()} qu'il est dans la room #${room.getId()}`)
 
 		user.get('sockets').forEach(socket => {
 			const uSocket = io.sockets.connected[socket]
