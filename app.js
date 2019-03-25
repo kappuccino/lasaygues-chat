@@ -94,7 +94,10 @@ io.on('connection', function (socket){
 	socket.on('createRoom', function(data){
 
 		let room
-		const askerID = users.getUserBySocket(socket.id).getId()
+		const asker = users.getUserBySocket(socket.id)
+		if(!asker) return
+
+		const askerID = asker.getId()
 
 		console.log('-- createRoom event -- from()', askerID)
 
