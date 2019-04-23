@@ -86,9 +86,7 @@ io.on('connection', function (socket){
 		console.log('Room after removing user')
 		console.log(room.get())
 
-
 		roomsStatus()
-
 	})
 
 	socket.on('createRoom', function(data){
@@ -185,6 +183,20 @@ io.on('connection', function (socket){
 		console.log('💬 [New message]', newMessage)
 		console.log('Send message to room', data.room)
 		console.log(rooms.getRoom(data.room))
+	})
+
+	socket.on('edit', function(data){
+		console.log('💬 [Edit message]', data)
+
+		io.emit('updateMessage', {
+			id: data.id,
+			message: data.message
+		})
+	})
+
+	socket.on('delete', function(id){
+		console.log('🔥 Delete messsage', id)
+		io.emit('deleteMessage', id)
 	})
 
 	socket.on('rehydrate', function(){
