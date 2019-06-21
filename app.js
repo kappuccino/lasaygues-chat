@@ -22,7 +22,7 @@ server.listen(process.env.PORT, () => {
 	console.log('Start listening on port', process.env.PORT)
 })
 
-app.get('/', function (req, res) {
+app.get('/zindex', function (req, res) {
 	res.sendFile(__dirname + '/index.html');
 })
 
