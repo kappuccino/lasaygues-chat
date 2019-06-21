@@ -28,6 +28,13 @@ app.get('/', function (req, res) {
 
 io.on('connection', function (socket){
 
+	socket.on('refreshSession', function({to, data}){
+		const uSocket = io.sockets.connected[to]
+		if(!uSocket) return
+
+		uSocket.emit('refreshedSession', data)
+	})
+
 	socket.on('refresh', function(){
 		roomsStatus()
 		usersStatus()
@@ -40,22 +47,20 @@ io.on('connection', function (socket){
 		let user = users.getUser(userData.id)
 		if(!user) user = users.addUser(userData)
 
-		console.log(`User "${userData.id}" is connected via socket ${socket.id}`)
+		//console.log(`User "${userData.id}" is connected via socket ${socket.id}`)
 
 		// Activate the user, and attache the current socket to it
 		user.setStatus(userData.status !== undefined ? userData.status : 'online')
 		user.attachSocket(socket.id)
 
-		// Est-ce que cet utilisateur fati déjà partie de ROOM
+		// Est-ce que cet utilisateur fait déjà partie de ROOM
 		rooms.getRooms()
 			.map(r => r.get())
 			.filter(r => r.users.indexOf(userData.id) > -1)
 			.forEach(r => {
 				socket.join(r.id)
-				console.log(`Je fait partie de la room ${r.id}`, r)
-
+				//console.log(`Je fait partie de la room ${r.id}`, r)
 			})
-
 
 		// Broadcast
 		usersStatus()
@@ -63,10 +68,18 @@ io.on('connection', function (socket){
 
 		// Rehydrate UI
 		rehydrate(socket)
+
+		// Messages
+		if(user.get('sockets').length > 1){
+			socket.broadcast.emit('reloadSession', {
+				to: socket.id,
+				id: user.get('id')
+			})
+		}
 	})
 
 	socket.on('appendUser', function({roomId, userId}){
-		console.log('appendUser', {roomId, userId})
+		//console.log('appendUser', {roomId, userId})
 
 		injectUserIntoRoom(roomId, userId)
 
@@ -75,7 +88,7 @@ io.on('connection', function (socket){
 
 	socket.on('exitRoom', function(id){
 
-		console.log('-- exitRoom event --')
+		//console.log('-- exitRoom event --')
 
 		const user = users.getUserBySocket(socket.id)
 		const room = rooms.getRoom(id)
@@ -83,8 +96,8 @@ io.on('connection', function (socket){
 
 		room.removeUser(user.getId())
 
-		console.log('Room after removing user')
-		console.log(room.get())
+		//console.log('Room after removing user')
+		//console.log(room.get())
 
 		roomsStatus()
 	})
@@ -97,7 +110,7 @@ io.on('connection', function (socket){
 
 		const askerID = asker.getId()
 
-		console.log('-- createRoom event -- from()', askerID)
+		//console.log('-- createRoom event -- from()', askerID)
 
 		// Liste des ID users concernés par la room
 		const usersID = [data.creator, data.guest]
@@ -115,12 +128,12 @@ io.on('connection', function (socket){
 		})
 
 		if(!already.length){
-			console.log('createRoom', usersID)
+			//console.log('createRoom', usersID)
 			room = rooms.createRoom({creator: data.creator})
 			room.appendUsers(usersID)
 		}else{
 			room = already[0]
-			console.log('Recycle room', room.getId())
+			//console.log('Recycle room', room.getId())
 
 			systemRoomMessage(room.getId, `XX a rejoint la conversation`)
 		}
@@ -132,7 +145,7 @@ io.on('connection', function (socket){
 			injectUserIntoRoom(room.getId(), userID, autoEnter)
 		})
 
-		console.log(`-- 🦊 Rooms (${rooms.getRooms().length})`)
+		//console.log(`-- 🦊 Rooms (${rooms.getRooms().length})`)
 		//console.log(JSON.stringify(rooms.getRooms(), null, 2))
 	})
 
@@ -156,11 +169,13 @@ io.on('connection', function (socket){
 	socket.on('disconnect', function(){
 		const user = users.getUserBySocket(socket.id)
 		if(!user) return
-		//console.log(`${user.getId())} is disconnected (previous socket ${socket.id})`)
+		//console.log(`${user.getId()} is disconnected (previous socket ${socket.id})`)
 
 		// Revoke the user, detach the socket
-		user.setStatus('offline')
 		user.detachSocket(socket.id)
+
+		// Make it offline if there is no more socket opened
+		if(user.get('sockets').length === 0) user.setStatus('offline')
 
 		usersStatus()
 	})
@@ -181,12 +196,12 @@ io.on('connection', function (socket){
 		io.emit('__newMessage__', newMessage) // spy & debug
 
 		console.log('💬 [New message]', newMessage)
-		console.log('Send message to room', data.room)
-		console.log(rooms.getRoom(data.room))
+		/*console.log('Send message to room', data.room)
+		console.log(rooms.getRoom(data.room))*/
 	})
 
 	socket.on('edit', function(data){
-		console.log('💬 [Edit message]', data)
+		//console.log('💬 [Edit message]', data)
 
 		io.emit('updateMessage', {
 			id: data.id,
@@ -195,12 +210,12 @@ io.on('connection', function (socket){
 	})
 
 	socket.on('delete', function(id){
-		console.log('🔥 Delete messsage', id)
+		//console.log('🔥 Delete messsage', id)
 		io.emit('deleteMessage', id)
 	})
 
 	socket.on('rehydrate', function(){
-		console.log(`socket.on('rehydrate')...`)
+		//console.log(`socket.on('rehydrate')...`)
 		rehydrate(socket)
 	})
 
@@ -208,7 +223,7 @@ io.on('connection', function (socket){
 		let user = users.getUserBySocket(socket.id)
 		if(!user) return
 
-		console.log(`Mise à jour d'un user avec ces params`, userData)
+		//console.log(`Mise à jour d'un user avec ces params`, userData)
 		user.set(userData)
 
 		usersStatus()
@@ -218,7 +233,7 @@ io.on('connection', function (socket){
 		const user = users.getUserBySocket(socket.id)
 		if(!user) return
 
-		console.log(`Mise à jour du status "online" pour`, user.id, `${isOnline ? 'online' : 'offline'}`)
+		//console.log(`Mise à jour du status "online" pour`, user.id, `${isOnline ? 'online' : 'offline'}`)
 		user.set({
 			online: isOnline
 		})
@@ -227,7 +242,7 @@ io.on('connection', function (socket){
 	})
 
 	socket.on('isWriting', function(roomId, is){
-		console.log('isWriting', roomId, is)
+		//console.log('isWriting', roomId, is)
 
 		const room = rooms.getRoom(roomId)
 		if(!room) return
@@ -260,13 +275,13 @@ function injectUserIntoRoom(roomId, userId, auto){
 	// On ajouter ce User à la Room
 	room.appendUser(userId)
 
-	console.log(`🔥 On doit prevenir user #${userId} qu'il est dans la room #${roomId}`)
+	//console.log(`🔥 On doit prevenir user #${userId} qu'il est dans la room #${roomId}`)
 
 	user.get('sockets').forEach(socket => {
 		const uSocket = io.sockets.connected[socket]
 		if(!uSocket) return
 
-		console.log('- Ahoy user', socket, 'please enter Room', roomId)
+		//console.log('- Ahoy user', socket, 'please enter Room', roomId)
 
 		// Tell thoses users, they are in the room now
 		uSocket.emit('enterRoom', {
@@ -279,7 +294,7 @@ function injectUserIntoRoom(roomId, userId, auto){
 
 		// Auto enter
 		if(auto){
-			console.log('------ autoEnterRoom pour ', userId)
+			//console.log('------ autoEnterRoom pour ', userId)
 			uSocket.emit('autoEnterRoom', roomId)
 		}
 
@@ -288,27 +303,27 @@ function injectUserIntoRoom(roomId, userId, auto){
 }
 
 function rehydrate(pipe){
-	let who = 'all'
+	/*let who = 'all'
 
-	console.log('rehydrate')
+	//console.log('rehydrate')
 
 	if(pipe){
 		const user = users.getUserBySocket(pipe.id)
-		console.log('pipe => user => ', user)
+		//console.log('pipe => user => ', user)
 
 		if(user) who = user.getId()
-	}
+	}*/
 
-	console.log('-- rehydrating '+who+' ----------------------------------------------------')
+	//console.log('-- rehydrating '+who+' ----------------------------------------------------')
 
 	const allUsers = users.getUserList().map(u => u.get())
 	const allRooms = rooms.getRooms().map(r => r.get())
 
-	console.log('--users')
-	console.log(allUsers.map(u => u.id))
+	//console.log('--users')
+	//console.log(allUsers.map(u => u.id))
 
-	console.log('--rooms')
-	console.log(allRooms)
+	//console.log('--rooms')
+	//console.log(allRooms)
 
 	// Si on a un pipe, il faut renvoyer l'infos qu'a celui-ci, si non à tous
 	;(pipe || io).emit('rehydrated', {
